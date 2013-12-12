@@ -1,0 +1,16 @@
+
+{% load staticfiles %}
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+  </head>
+  <body>
+      <div>
+        <form action="/wizard" method="post">
+        {% csrf_token %}
+          {{ task_html|safe }}
+        </form>
+      </div>
+  </body>
+</html>

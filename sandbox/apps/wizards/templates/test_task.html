@@ -1,0 +1,15 @@
+  <div>
+    <lu>
+      {% for tab in actions.tabs %}
+      <li><b>{{ tab.0 }}<b>: {{ tab.1 }}</li>
+      {% endfor %}
+    </lu>
+  </div>
+  <div>
+    {{ subtask.render|safe }}
+  </div>
+  <div>
+    <input type="submit" value="Previous" name={{actions.previous}}></input>
+    <input type="submit" value="Next" name={{actions.next}}></input>
+  </div>
+</form>
