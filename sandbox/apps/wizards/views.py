@@ -7,14 +7,15 @@ class TaskView(View):
     template_name = 'task_wrapper.html'
 
     def get(self, request, *args, **kwargs):
-        task = definitions.TestTask(length=5)
+        # initialize task session storage
         request.session['state'] = {}
-        task.save_state(request.session['state'])
-        return render(request, self.template_name, {'task_html': task.render()})
+        request.session['data'] = {}
+        task = definitions.TestTask(prefix='tsk_', storage=request.session)
+        return render(request, self.template_name, {'task_html': task.get(request)})
 
     def post(self, request, *args, **kwargs):
-        task = definitions.TestTask(length=5, state=request.session.get('state'),
-                                    posted=request.POST)
-        request.session['state'] = {}
-        task.save_state(request.session['state'])
-        return render(request, self.template_name, {'task_html': task.render()})
+        task = definitions.TestTask(prefix="tsk_", storage=request.session)
+        # session is not considered to be modified when no dictionary keys
+        # have been assigned or deleted, and thus not saved, unless forced
+        request.session.modified = True
+        return render(request, self.template_name, {'task_html': task.post(request)})

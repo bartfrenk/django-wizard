@@ -1,30 +1,33 @@
 
 from sandbox.libs import tasks
 
+def numbered_task_builder(n):
+
+    class NumberedTask(tasks.AtomicTask):
+
+        number = n
+
+        def __init__(self, prefix="", storage=None):
+            super(NumberedTask, self).__init__(prefix, storage)
+            self.label = self.__class__.__name__ + "_" + str(self.number)
+
+        def restore_state(self, storage):
+            pass
+
+        def save_state(self, storage):
+            pass
+
+        def render(self, request):
+            return "<b>" + str(self.__class__.number) + "</b>"
+
+    return NumberedTask
+
 
 class TestTask(tasks.SequentialTask):
 
     template = 'test_task.html'
-
-    def __init__(self, length, prefix="", state=None, data=None, posted=None):
-        self.length = length
-        super(TestTask, self).__init__(prefix, state, data, posted)
-
-    def set_subtasks(self, prefix, *args, **kwargs):
-        self._subtasks = [NumberedTask(i, prefix) for i in range(self.length)]
+    subtasks = [numbered_task_builder(i) for i in range(4)]
 
 
-class NumberedTask(tasks.AtomicTask):
 
-    def __init__(self, number, prefix="", state=None, data=None, posted=None):
-        super(NumberedTask, self).__init__(prefix, state, data, posted)
-        self.number = number
 
-    def restore_state(self, storage):
-        pass
-
-    def save_state(self, storage):
-        pass
-
-    def render(self):
-        return "<b>" + str(self.number) + "</b>"

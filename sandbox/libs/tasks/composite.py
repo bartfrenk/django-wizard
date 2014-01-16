@@ -1,50 +1,47 @@
-
+from collections import OrderedDict
 import base
 
 
 class SequentialTask(base.CompositeTask):
 
+    class_actions = {'previous', 'next'}
     template = "sequential_task.html"
-    actions = {'previous', 'next'}
+
+# PROTECTED
+
+    @property
+    def actions(self):
+        actions = super(SequentialTask, self).actions
+        actions['tabs'] = OrderedDict((tab, self.prefixed(tab))
+                                      for (index, tab) in enumerate(self.tabs))
+        return actions
+
+    @property
+    def tabs(self):
+        tab_list = []
+        for subtask in self._subtasks:
+            tab_list += subtask.tabs
+        return tab_list
 
     def process_action(self, action):
         if action == 'previous':
-            self._current_subtask = max(0, self._current_subtask - 1)
+            self.set_current_subtask(max(0, self._current_subtask - 1))
         elif action == 'next':
-            self._current_subtask = min(len(self._subtasks) - 1, self._current_subtask + 1)
+            self.set_current_subtask(min(len(self._subtasks) - 1, self._current_subtask + 1))
         elif action is None:
             pass
         else:
-            raise ValueError("'Cannot handle action " + str(action) + ".")
-
-    def get_flat_actions(self):
-        # TODO: this function should output the flattening of get_actions_for_template
-        # TODO: hacked to make it work: add tab actions to the dictionary.
-        _actions = super(SequentialTask, self).get_flat_actions()
-        return _actions
-
-    def get_struct_actions(self):
-        # TODO: make dictionary under tabs ordered of the form (label -> action_id)
-        _actions = super(SequentialTask, self).get_struct_actions()
-        _actions['tabs'] = [tab for tab in enumerate(self.get_tab_list())]
-        return _actions
-
-    def get_tab_list(self):
-        tab_list = []
-        for subtask in self._subtasks:
-            tab_list += subtask.get_tab_list()
-        return tab_list
-
-    def set_subtasks(self, *args, **kwargs):
-        self._subtasks = args
-
-    def get_context(self):
-        context = super(SequentialTask, self).get_context()
-        context.update({'subtask': self.get_current_subtask()})
-        return context
+            raise ValueError("Cannot handle action " + str(action) + ".")
 
     def is_complete(self):
         return all(subtask.is_complete() for subtask in self._subtasks)
+
+    def get_context(self, request):
+        context = super(SequentialTask, self).get_context()
+        context.update({'subtask_html':
+                        self._subtasks[self._current_subtask].render(request)})
+        return context
+
 
 
 class DisjunctiveTask(base.CompositeTask):
@@ -56,3 +53,17 @@ class DisjunctiveTask(base.CompositeTask):
 
 class SimultaneousTask(base.CompositeTask):
     pass
+
+
+if __name__ == "__main__":
+    class SubTask(SequentialTask):
+        subtasks = [base.AtomicTask for _ in range(4)]
+    class TestTask(SequentialTask):
+        subtasks = [SubTask for _ in range(2)]
+    task = TestTask()
+    print(task)
+    task.process_action("next")
+    print(task)
+    print(task.is_complete())
+    print(task.actions)
+    print(task.tabs)

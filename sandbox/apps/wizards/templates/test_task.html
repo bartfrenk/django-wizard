@@ -1,12 +1,12 @@
   <div>
     <lu>
-      {% for tab in actions.tabs %}
-      <li><b>{{ tab.0 }}<b>: {{ tab.1 }}</li>
+      {% for label, id in actions.tabs.items %}
+      <li><b>{{ label }}<b>: {{ id }}</li>
       {% endfor %}
     </lu>
   </div>
   <div>
-    {{ subtask.render|safe }}
+    {{ subtask_html|safe }}
   </div>
   <div>
     <input type="submit" value="Previous" name={{actions.previous}}></input>

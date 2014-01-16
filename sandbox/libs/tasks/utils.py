@@ -13,3 +13,20 @@ class SuppressErrors(object):
         if isinstance(exc_instance, self.exceptions):
             return True
         return False
+
+def flatten(tree):
+    """
+    Return the leaves of the action tree.
+    """
+    # TODO: make this generic by flattening the action tree
+    leaves = {}
+
+    def _flatten(node):
+        for (key, value) in node.items():
+            if isinstance(value, dict):
+                _flatten(value)
+            else:
+                leaves[key] = value
+
+    _flatten(tree)
+    return leaves
