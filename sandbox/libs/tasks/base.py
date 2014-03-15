@@ -1,6 +1,14 @@
 import django.template
 import utils
 
+class Action(object):
+
+    def __init__(self, id, task, label=None, enabled=True):
+        self.id = id
+        self.html_id = task.prefixed(str(id))
+        self.label = label or id.title()
+        self.enabled = enabled
+
 
 class Task(object):
     """
@@ -12,22 +20,41 @@ class Task(object):
     """
 
     class_actions = set()
+    initial_state = {}
     template = None
 
 # PUBLIC METHODS
 
-    def __init__(self, prefix = "", storage=None):
+    def __init__(self, prefix = "", state=None, data=None):
         self._prefix = prefix
-        self._storage = storage
-        self.restore()
+        self._data = data
+        self._state = state
+
+    def __getattr__(self, name):
+        if name in self.initial_state:
+            # name is part of the state of the task
+            if hasattr(self, "get_" + name):
+                return getattr(self, "get_" + name)()
+            else:
+                return self._state.get(self.prefixed(name), self.initial_state[name])
+        else:
+            raise AttributeError("'" + self.__class__.__name__ + "' has no attribute '" + name + "'")
+
+    def __setattr__(self, name, value):
+        if name in self.initial_state:
+            # name is part of the state of the task
+            if hasattr(self, "set_" + name):
+                getattr(self, "set_" + name)(value)
+            else:
+                self._state[self.prefixed(name)] = value
+        else:
+            super(Task, self).__setattr__(name, value)
 
     def post(self, request):
         self.process_action(self.extract_action(request.POST))
-        self.save()
-        return self.render(request)
+        return self._state
 
     def get(self, request):
-        self.save()
         return self.render(request)
 
 # PROTECTED METHODS
@@ -35,21 +62,15 @@ class Task(object):
     @property
     def actions(self):
         """
-        Return dictionary tree whose leaves map action names to action identifiers.
+        Return dictionary tree whose leaves are actions.
         """
-        return dict((action, self.prefixed(action)) for action in self.class_actions)
+        return dict((action_id, Action(action_id, self)) for action_id in self.class_actions)
 
     @property
     def tabs(self):
         return []
 
     def process_action(self, action):
-        pass
-
-    def restore(self):
-        pass
-
-    def save(self):
         pass
 
     def get_context(self):
@@ -65,8 +86,8 @@ class Task(object):
         Retrieve the action name for the actions taken by the user (i.e. submitted
         through an http post request).
         """
-        _actions = [action for (action, html_id) in utils.flatten(self.actions).items() \
-                                                 if html_id in posted]
+        _actions = [action for action in utils.traverse(self.actions) \
+                                      if action.html_id in posted]
 
         if len(_actions) > 1:
             raise ValueError('Cannot process more than one action.')
@@ -89,14 +110,15 @@ class CompositeTask(Task):
     """
     subtasks = []
     initial_subtask = 0
+    initial_state = {"current_subtask": 0}
 
 # PUBLIC METHODS
 
-    def __init__(self, prefix="", storage=None):
+    def __init__(self, prefix="", state=None, data=None):
         self._prefix = prefix
-        self._storage = storage
+        self._state = state
+        self._data = data
         self.init_subtasks()
-        self.restore()
 
     def __repr__(self):
         result = "["
@@ -106,29 +128,21 @@ class CompositeTask(Task):
         result += "]"
         return result
 
-# PROTECTED METHODS
-
-    def save(self):
-        self._storage['state'][self.prefixed('current_subtask')] = self._current_subtask
-
-    def restore(self):
-        state = self._storage.get('state') if self._storage else None
-        if state is None:
-            self._current_subtask = 0
-        else:
-            self.set_current_subtask(state.get(self.prefixed('current_subtask'), 0))
-
 # PRIVATE
 
     def init_subtasks(self):
-        self._subtasks = [cls(self._prefix + str(i) + "_", self._storage) \
+        self._subtasks = [cls(self._prefix + str(i) + "_", self._state, self._data) \
                           for (i, cls) in enumerate(self.__class__.subtasks)]
 
-    def set_current_subtask(self, index):
-        if 0 <= index and index < len(self._subtasks):
-            self._current_subtask = index
+    def set_current_subtask(self, value):
+        if 0 <= value and value < len(self._subtasks):
+            self._state[self.prefixed("current_subtask")] = unicode(value)
         else:
             raise ValueError("Current subtask specified by an out-of-range index.")
+
+    def get_current_subtask(self):
+        return int(self._state.get(self.prefixed("current_subtask"), \
+                                   self.initial_state["current_subtask"]))
 
 
 class AtomicTask(Task):

@@ -36,7 +36,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'sandbox.apps.wizards'
+    'sandbox.apps.wizards',
+    'sandbox.libs.tasks',
 )
 
 MIDDLEWARE_CLASSES = (

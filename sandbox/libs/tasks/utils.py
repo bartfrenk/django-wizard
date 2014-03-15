@@ -14,11 +14,11 @@ class SuppressErrors(object):
             return True
         return False
 
+
 def flatten(tree):
     """
     Return the leaves of the action tree.
     """
-    # TODO: make this generic by flattening the action tree
     leaves = {}
 
     def _flatten(node):
@@ -30,3 +30,22 @@ def flatten(tree):
 
     _flatten(tree)
     return leaves
+
+
+def traverse(tree):
+
+    if isinstance(tree, list):
+        for item in tree:
+            yield item
+    elif isinstance(tree, dict):
+        for branch in tree.values():
+            for item in traverse(branch):
+                yield item
+    else:
+        yield tree
+
+
+if __name__ == "__main__":
+    tree = {'a': [1,2,3], 'b':[4,5,6], 'c': {'d': [7,8], 'e': 9}}
+    print(list(traverse(tree)))
+

@@ -1,5 +1,5 @@
-
 from sandbox.libs import tasks
+
 
 def numbered_task_builder(n):
 
@@ -7,15 +7,9 @@ def numbered_task_builder(n):
 
         number = n
 
-        def __init__(self, prefix="", storage=None):
-            super(NumberedTask, self).__init__(prefix, storage)
+        def __init__(self, prefix="", state=None, data=None):
+            super(NumberedTask, self).__init__(prefix, state, data)
             self.label = self.__class__.__name__ + "_" + str(self.number)
-
-        def restore_state(self, storage):
-            pass
-
-        def save_state(self, storage):
-            pass
 
         def render(self, request):
             return "<b>" + str(self.__class__.number) + "</b>"
@@ -25,9 +19,4 @@ def numbered_task_builder(n):
 
 class TestTask(tasks.SequentialTask):
 
-    template = 'test_task.html'
     subtasks = [numbered_task_builder(i) for i in range(4)]
-
-
-
-

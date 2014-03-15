@@ -1,0 +1,14 @@
+<div>
+    <ul class="sequential_tabs">
+        {% for action in actions.tabs %}
+        <li><input type="submit" value={{action.label}} name={{action.html_id}}></input></li>
+        {% endfor %}
+    </ul>
+</div>
+<div>
+    {{ subtask_html|safe }}
+</div>
+<div>
+    <input type="submit" value={{actions.previous.label}} name={{actions.previous.html_id}}></input>
+    <input type="submit" value={{actions.next.label}} name={{actions.next.html_id}}></input>
+</div>
